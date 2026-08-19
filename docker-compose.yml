@@ -1,0 +1,61 @@
+services:
+
+  # ── Base de datos ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: librapp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: librapp
+      POSTGRES_PASSWORD: librapp
+      POSTGRES_DB: librapp_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U librapp -d librapp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend FastAPI ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: librapp_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    # Migraciones Alembic antes de uvicorn: el esquema debe seguir al código en
+    # cada arranque. El seed idempotente (admin + datos demo) corre en el lifespan.
+    command: sh -c "PYTHONPATH=/app python scripts/db_migrate.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  # ── Frontend React (Dev) ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: librapp_frontend
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env
+    # Host 5175 → contenedor 5173: el 5173 del host lo usa otro proyecto (Operix).
+    ports:
+      - "5175:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

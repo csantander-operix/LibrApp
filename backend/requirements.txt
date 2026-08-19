@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.6
+pydantic-settings==2.6.1
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg2-binary==2.9.10
+# 3.4.0 corrige CVE-2024-33663 (confusión de algoritmos) y CVE-2024-33664 (DoS por JWE).
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+# passlib 1.7.4 no es compatible con bcrypt >= 4.1. Fijamos 4.0.1.
+bcrypt==4.0.1
+# 0.0.18 corrige CVE-2024-53981 (DoS por multipart malformado).
+python-multipart==0.0.18
+python-dotenv==1.0.1
+# Lectura de .xlsx en el importador de catálogo (RF-05).
+openpyxl==3.1.5
