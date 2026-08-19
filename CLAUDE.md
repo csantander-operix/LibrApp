@@ -91,13 +91,24 @@ pero **simplificadas**: sin multi-tenancy, sin Celery/Redis, sin mails.
 
 - **Orden de rutas**: las rutas "literales" que comparten prefijo con una `/{id}` deben
   declararse ANTES (ej: `PUT /catalogo/estantes/posiciones` va antes de `/estantes/{estante_id}`,
-  si no "posiciones" se parsea como UUID → 422).
+  y `PUT /catalogo/anotaciones/posiciones` antes de `/anotaciones/{anotacion_id}`; si no
+  "posiciones" se parsea como UUID → 422).
+- **Migrar ANTES de que recargue el seed**: al tocar un modelo, `uvicorn --reload` reinicia y el
+  `lifespan` corre el seed, que consulta las columnas nuevas → si la migración aún no se aplicó,
+  el arranque falla (`UndefinedColumn`). Aplicá `docker compose exec backend alembic upgrade head`
+  y recién ahí reiniciá el backend (`docker compose restart backend`).
 - **Importador** (`catalogo/importer.py`): tolera los CSV reales (fila de título antes del
   header, delimitador `;`, precios `$ 25.000,00`, columnas faltantes) y `.xlsx`. Deduplica por
   ISBN y, para las MUCHAS filas sin ISBN, por (título+editorial normalizados), así reimportar
   el mismo archivo **no duplica** el catálogo. Tiene modo `dry_run` (preview) → confirmar.
-- **Mapa**: estantes en coordenadas % (0-100) sobre un canvas aspect 3/2. `MapaCanvas`
-  (compartido admin/público) hace drag con pointer events, sin librería externa.
+- **Mapa**: plano cenital, estantes y anotaciones en coordenadas % (0-100) sobre un canvas
+  aspect 3/2. `MapaCanvas` (compartido admin/público) hace drag **y resize** (handle esquina SE)
+  con pointer events, sin librería externa. Estantes: `color` propio o, si es null, uno derivado
+  de la zona (`colorEstante` en `lib/utils`). **Anotaciones** (`AnotacionMapa`, tipo
+  `texto`/`flecha` con `rotacion`) son marcas de referencia (ENTRADA, ESCALERA, VENTANA); CRUD en
+  `catalogo`, se editan en el editor y se ven en público (solo lectura). Estantes y anotaciones se
+  persisten con guardado **en lote** (`.../posiciones`); el alta/baja es inmediata pero se agrega
+  a la copia local optimista para no perder cambios sin guardar.
 - **Tailwind v4**: usar `4.1.12` (el `4.0.0` exacto tiene un bug de compilación). Config por
   `@tailwindcss/vite` + `@theme` en `index.css` (color de acento `--color-unla`, bordó UNLa).
 - **`db_migrate.py`** necesita `PYTHONPATH=/app` (corre como script suelto; ya está en el
@@ -113,4 +124,4 @@ pero **simplificadas**: sin multi-tenancy, sin Celery/Redis, sin mails.
    router (fino, `dependencies=[ADMIN]` si escribe) → incluir router en `main.py` si es módulo nuevo.
 2. Frontend: en `modules/<feature>/` agregar funciones en `api.ts` + la página; registrar la
    ruta en `app/AppRoutes.tsx`; si va en el panel, sumar el ítem en `shared/components/AdminLayout.tsx`.
-3. Invalidar las `queryKey` afectadas tras mutar (`libros`, `estantes`, `zonas`, `dashboard`).
+3. Invalidar las `queryKey` afectadas tras mutar (`libros`, `estantes`, `anotaciones`, `zonas`, `dashboard`).

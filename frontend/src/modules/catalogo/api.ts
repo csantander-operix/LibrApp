@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type {
   Libro, Coleccion, Zona, Estante, LibroInput, ImportResultado,
+  Anotacion, AnotacionTipo,
 } from "@/shared/types";
 
 // ─── Lectura ──────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ export interface EstanteInput {
   codigo: string;
   etiqueta: string | null;
   zona_id: string | null;
+  color?: string | null;
 }
 
 export async function crearEstante(input: EstanteInput): Promise<Estante> {
@@ -107,6 +109,7 @@ export interface PosicionEstante {
   pos_y: number;
   ancho?: number;
   alto?: number;
+  color?: string | null;
 }
 
 export async function guardarPosiciones(posiciones: PosicionEstante[]): Promise<number> {
@@ -115,6 +118,53 @@ export async function guardarPosiciones(posiciones: PosicionEstante[]): Promise<
     { posiciones },
   );
   return data.actualizados;
+}
+
+// ─── Anotaciones del mapa (flechas / textos) ──────────────────────────────────
+
+export async function listarAnotaciones(): Promise<Anotacion[]> {
+  const { data } = await api.get<Anotacion[]>("/catalogo/anotaciones");
+  return data;
+}
+
+export interface AnotacionInput {
+  tipo: AnotacionTipo;
+  texto?: string | null;
+  zona_id?: string | null;
+  pos_x?: number;
+  pos_y?: number;
+  ancho?: number;
+  alto?: number;
+  rotacion?: number;
+  color?: string | null;
+}
+
+export async function crearAnotacion(input: AnotacionInput): Promise<Anotacion> {
+  const { data } = await api.post<Anotacion>("/catalogo/anotaciones", input);
+  return data;
+}
+
+export interface AnotacionPosicion {
+  id: string;
+  texto: string | null;
+  pos_x: number;
+  pos_y: number;
+  ancho: number;
+  alto: number;
+  rotacion: number;
+  color: string | null;
+}
+
+export async function guardarAnotaciones(anotaciones: AnotacionPosicion[]): Promise<number> {
+  const { data } = await api.put<{ actualizados: number }>(
+    "/catalogo/anotaciones/posiciones",
+    { anotaciones },
+  );
+  return data.actualizados;
+}
+
+export async function eliminarAnotacion(id: string): Promise<void> {
+  await api.delete(`/catalogo/anotaciones/${id}`);
 }
 
 // ─── Colecciones (escritura) ──────────────────────────────────────────────────

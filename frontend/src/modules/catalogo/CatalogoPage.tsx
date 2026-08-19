@@ -75,8 +75,8 @@ export function CatalogoPage() {
     <div>
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Catálogo</h1>
-          <p className="text-sm text-slate-500">{total} libro(s) en el inventario.</p>
+          <h1 className="font-serif text-2xl font-bold text-stone-900">Catálogo</h1>
+          <p className="text-sm text-stone-500">{total} libro(s) en el inventario.</p>
         </div>
         <Button onClick={abrirAlta}>
           <Plus className="h-4 w-4" /> Nuevo libro

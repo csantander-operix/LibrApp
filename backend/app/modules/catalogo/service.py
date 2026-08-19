@@ -2,12 +2,22 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from app.modules.catalogo.models import Zona, Coleccion, Estante, Libro
+from app.modules.catalogo.models import Zona, Coleccion, Estante, Libro, AnotacionMapa
 from app.modules.catalogo.schemas import (
     LibroResponse, EstanteResponse, LibroCreate, LibroUpdate,
     EstanteCreate, EstanteUpdate, ColeccionCreate, ZonaCreate, ZonaUpdate,
+    AnotacionResponse, AnotacionCreate,
 )
 from app.shared.exceptions import NotFoundError, ConflictError
+
+
+def _to_estante_response(e: Estante, total_libros: int = 0) -> EstanteResponse:
+    return EstanteResponse(
+        id=e.id, codigo=e.codigo, etiqueta=e.etiqueta, zona_id=e.zona_id,
+        pos_x=float(e.pos_x), pos_y=float(e.pos_y),
+        ancho=float(e.ancho), alto=float(e.alto), color=e.color,
+        total_libros=total_libros,
+    )
 
 
 # ─── Lectura ──────────────────────────────────────────────────────────────────
@@ -29,15 +39,7 @@ def listar_estantes(db: Session) -> list[EstanteResponse]:
         .all()
     )
     estantes = db.query(Estante).order_by(Estante.codigo).all()
-    return [
-        EstanteResponse(
-            id=e.id, codigo=e.codigo, etiqueta=e.etiqueta, zona_id=e.zona_id,
-            pos_x=float(e.pos_x), pos_y=float(e.pos_y),
-            ancho=float(e.ancho), alto=float(e.alto),
-            total_libros=conteos.get(e.id, 0),
-        )
-        for e in estantes
-    ]
+    return [_to_estante_response(e, conteos.get(e.id, 0)) for e in estantes]
 
 
 def _to_libro_response(lb: Libro) -> LibroResponse:
@@ -164,11 +166,7 @@ def crear_estante(db: Session, data: EstanteCreate) -> EstanteResponse:
     db.add(e)
     db.commit()
     db.refresh(e)
-    return EstanteResponse(
-        id=e.id, codigo=e.codigo, etiqueta=e.etiqueta, zona_id=e.zona_id,
-        pos_x=float(e.pos_x), pos_y=float(e.pos_y), ancho=float(e.ancho), alto=float(e.alto),
-        total_libros=0,
-    )
+    return _to_estante_response(e, 0)
 
 
 def actualizar_estante(db: Session, estante_id: uuid.UUID, data: EstanteUpdate) -> EstanteResponse:
@@ -185,16 +183,12 @@ def actualizar_estante(db: Session, estante_id: uuid.UUID, data: EstanteUpdate) 
     db.commit()
     db.refresh(e)
     total = db.query(func.count(Libro.id)).filter(Libro.estante_id == e.id).scalar() or 0
-    return EstanteResponse(
-        id=e.id, codigo=e.codigo, etiqueta=e.etiqueta, zona_id=e.zona_id,
-        pos_x=float(e.pos_x), pos_y=float(e.pos_y), ancho=float(e.ancho), alto=float(e.alto),
-        total_libros=total,
-    )
+    return _to_estante_response(e, total)
 
 
 def actualizar_posiciones(db: Session, posiciones) -> int:
-    """Guarda en lote la geometría de los estantes movidos en el editor de mapa
-    (drag & drop — RF-10 / CU-05). Devuelve cuántos se actualizaron."""
+    """Guarda en lote la geometría (y color) de los estantes editados en el mapa
+    (drag & drop / resize — RF-10 / CU-05). Devuelve cuántos se actualizaron."""
     actualizados = 0
     for pos in posiciones:
         e = db.get(Estante, pos.id)
@@ -206,9 +200,69 @@ def actualizar_posiciones(db: Session, posiciones) -> int:
             e.ancho = pos.ancho
         if pos.alto is not None:
             e.alto = pos.alto
+        # color viene siempre en el payload; None limpia el color (vuelve al de zona).
+        e.color = pos.color
         actualizados += 1
     db.commit()
     return actualizados
+
+
+# ─── Mapa: anotaciones (flechas / textos) ─────────────────────────────────────
+
+def _to_anotacion_response(a: AnotacionMapa) -> AnotacionResponse:
+    return AnotacionResponse(
+        id=a.id, zona_id=a.zona_id, tipo=a.tipo, texto=a.texto,
+        pos_x=float(a.pos_x), pos_y=float(a.pos_y),
+        ancho=float(a.ancho), alto=float(a.alto),
+        rotacion=float(a.rotacion), color=a.color,
+    )
+
+
+def listar_anotaciones(db: Session) -> list[AnotacionResponse]:
+    filas = db.query(AnotacionMapa).order_by(AnotacionMapa.created_at).all()
+    return [_to_anotacion_response(a) for a in filas]
+
+
+def crear_anotacion(db: Session, data: AnotacionCreate) -> AnotacionResponse:
+    if data.zona_id and not db.get(Zona, data.zona_id):
+        raise NotFoundError("La zona indicada no existe")
+    a = AnotacionMapa(**data.model_dump())
+    db.add(a)
+    db.commit()
+    db.refresh(a)
+    return _to_anotacion_response(a)
+
+
+def obtener_anotacion(db: Session, anotacion_id: uuid.UUID) -> AnotacionMapa:
+    a = db.get(AnotacionMapa, anotacion_id)
+    if not a:
+        raise NotFoundError("Anotación no encontrada")
+    return a
+
+
+def actualizar_anotaciones(db: Session, anotaciones) -> int:
+    """Guarda en lote texto/geometría/rotación/color de las anotaciones editadas."""
+    actualizados = 0
+    for item in anotaciones:
+        a = db.get(AnotacionMapa, item.id)
+        if not a:
+            continue
+        a.texto = item.texto
+        a.pos_x = item.pos_x
+        a.pos_y = item.pos_y
+        a.ancho = item.ancho
+        a.alto = item.alto
+        a.rotacion = item.rotacion
+        a.color = item.color
+        actualizados += 1
+    db.commit()
+    return actualizados
+
+
+def eliminar_anotacion(db: Session, anotacion_id: uuid.UUID) -> None:
+    a = obtener_anotacion(db, anotacion_id)
+    db.delete(a)
+    db.commit()
 
 
 def eliminar_estante(db: Session, estante_id: uuid.UUID) -> None:

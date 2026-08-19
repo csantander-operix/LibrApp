@@ -45,8 +45,8 @@ export function EstantesPage() {
     <div>
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Estantes</h1>
-          <p className="text-sm text-slate-500">Secciones físicas del local (RF-02).</p>
+          <h1 className="font-serif text-2xl font-bold text-stone-900">Estantes</h1>
+          <p className="text-sm text-stone-500">Secciones físicas del local (RF-02).</p>
         </div>
         <Button onClick={() => { setEdit(null); setModal(true); }}>
           <Plus className="h-4 w-4" /> Nuevo estante

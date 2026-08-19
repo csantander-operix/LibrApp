@@ -10,6 +10,7 @@ from app.modules.catalogo.schemas import (
     LibroCreate, LibroUpdate, PrecioUpdate,
     EstanteCreate, EstanteUpdate, ColeccionCreate, ImportResultado,
     PosicionesUpdate, ZonaCreate, ZonaUpdate,
+    AnotacionResponse, AnotacionCreate, AnotacionesUpdate,
 )
 
 # Lectura: pública (RF-07). Escritura (ABM): protegida con require_admin (RN-05).
@@ -46,6 +47,11 @@ def listar_colecciones(db: Session = Depends(get_db)):
 @router.get("/zonas", response_model=list[ZonaResponse])
 def listar_zonas(db: Session = Depends(get_db)):
     return service.listar_zonas(db)
+
+
+@router.get("/anotaciones", response_model=list[AnotacionResponse])
+def listar_anotaciones(db: Session = Depends(get_db)):
+    return service.listar_anotaciones(db)
 
 
 # ─── Escritura: Libros (RF-04 / RF-09) ────────────────────────────────────────
@@ -93,6 +99,25 @@ def actualizar_estante(estante_id: uuid.UUID, data: EstanteUpdate, db: Session =
 @router.delete("/estantes/{estante_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[ADMIN])
 def eliminar_estante(estante_id: uuid.UUID, db: Session = Depends(get_db)):
     service.eliminar_estante(db, estante_id)
+
+
+# ─── Escritura: Anotaciones del mapa (flechas / textos) ───────────────────────
+
+@router.post("/anotaciones", response_model=AnotacionResponse, status_code=status.HTTP_201_CREATED, dependencies=[ADMIN])
+def crear_anotacion(data: AnotacionCreate, db: Session = Depends(get_db)):
+    return service.crear_anotacion(db, data)
+
+
+# Literal antes de /{anotacion_id} para que "posiciones" no se parsee como UUID.
+@router.put("/anotaciones/posiciones", dependencies=[ADMIN])
+def guardar_anotaciones(data: AnotacionesUpdate, db: Session = Depends(get_db)):
+    actualizados = service.actualizar_anotaciones(db, data.anotaciones)
+    return {"actualizados": actualizados}
+
+
+@router.delete("/anotaciones/{anotacion_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[ADMIN])
+def eliminar_anotacion(anotacion_id: uuid.UUID, db: Session = Depends(get_db)):
+    service.eliminar_anotacion(db, anotacion_id)
 
 
 # ─── Escritura: Zonas (RF-11) ─────────────────────────────────────────────────

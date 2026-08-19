@@ -14,21 +14,26 @@ const nav = [
 
 export function AdminLayout() {
   const { usuario, logout } = useAuth();
+  const iniciales = (usuario?.nombre ?? usuario?.username ?? "?").slice(0, 2).toUpperCase();
 
   return (
     <div className="flex min-h-full">
-      <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
-        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-unla text-white">
+      <aside className="sidebar-texture flex w-64 flex-col text-slate-300">
+        {/* Marca */}
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-unla text-white shadow-lg shadow-black/30 ring-1 ring-white/10">
             <BookMarked className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm font-bold leading-tight text-slate-900">LibrApp</p>
-            <p className="text-xs text-slate-500">Rodolfo Walsh</p>
+            <p className="font-serif text-base font-bold leading-tight text-white">LibrApp</p>
+            <p className="text-[11px] tracking-wide text-slate-400">Librería Rodolfo Walsh</p>
           </div>
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
+          <p className="px-3 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+            Gestión
+          </p>
           {nav.map(({ to, label, icon: Icon, enabled, end }) =>
             enabled ? (
               <NavLink
@@ -37,37 +42,56 @@ export function AdminLayout() {
                 end={end}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
-                    isActive ? "bg-unla/10 text-unla" : "text-slate-600 hover:bg-slate-100",
+                    "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                    isActive
+                      ? "bg-unla text-white shadow-md shadow-black/20"
+                      : "text-slate-300 hover:bg-white/5 hover:text-white",
                   )
                 }
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                {({ isActive }) => (
+                  <>
+                    {/* Indicador bordó del ítem activo */}
+                    <span
+                      className={cn(
+                        "absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-ambar transition-all",
+                        isActive ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <Icon className="h-[18px] w-[18px]" />
+                    {label}
+                  </>
+                )}
               </NavLink>
             ) : (
               <span
                 key={to}
                 title="Disponible en próximas entregas"
-                className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300"
+                className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600"
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-[18px] w-[18px]" />
                 {label}
               </span>
             ),
           )}
         </nav>
 
-        <div className="border-t border-slate-200 p-3">
-          <div className="mb-2 px-3">
-            <p className="text-sm font-medium text-slate-700">{usuario?.nombre ?? usuario?.username}</p>
-            <p className="text-xs text-slate-400">{usuario?.rol}</p>
+        {/* Usuario */}
+        <div className="border-t border-white/10 p-3">
+          <div className="mb-1 flex items-center gap-3 px-2 py-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/15">
+              {iniciales}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-white">{usuario?.nombre ?? usuario?.username}</p>
+              <p className="text-xs capitalize text-slate-400">{usuario?.rol}</p>
+            </div>
           </div>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-[18px] w-[18px]" />
             Cerrar sesión
           </button>
         </div>

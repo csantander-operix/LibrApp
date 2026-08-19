@@ -50,8 +50,8 @@ export function ImportarPage() {
   return (
     <div className="max-w-2xl">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Importar inventario</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="font-serif text-2xl font-bold text-stone-900">Importar inventario</h1>
+        <p className="text-sm text-stone-500">
           Cargá el catálogo desde un archivo <strong>.csv</strong> o <strong>.xlsx</strong> (RF-05).
           Se detectan las columnas automáticamente; los libros sin ubicación quedan como “Sin ubicar”.
         </p>

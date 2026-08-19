@@ -57,6 +57,7 @@ class EstanteResponse(BaseModel):
     pos_y: float
     ancho: float
     alto: float
+    color: str | None = None
     # Denormalizado para la UI.
     total_libros: int = 0
 
@@ -144,6 +145,7 @@ class EstanteCreate(BaseModel):
     pos_y: float = 0
     ancho: float = 12
     alto: float = 10
+    color: str | None = None
 
     @field_validator("codigo")
     @classmethod
@@ -162,6 +164,7 @@ class EstanteUpdate(BaseModel):
     pos_y: float | None = None
     ancho: float | None = None
     alto: float | None = None
+    color: str | None = None
 
     @field_validator("codigo")
     @classmethod
@@ -182,10 +185,63 @@ class EstantePosicion(BaseModel):
     pos_y: float
     ancho: float | None = None
     alto: float | None = None
+    color: str | None = None
 
 
 class PosicionesUpdate(BaseModel):
     posiciones: list[EstantePosicion]
+
+
+# ─── Mapa: anotaciones (flechas / textos — ventanas, escaleras, puertas) ───────
+
+class AnotacionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    zona_id: uuid.UUID | None
+    tipo: str
+    texto: str | None
+    pos_x: float
+    pos_y: float
+    ancho: float
+    alto: float
+    rotacion: float
+    color: str | None = None
+
+
+class AnotacionCreate(BaseModel):
+    tipo: str = "texto"
+    texto: str | None = None
+    zona_id: uuid.UUID | None = None
+    pos_x: float = 40
+    pos_y: float = 40
+    ancho: float = 14
+    alto: float = 6
+    rotacion: float = 0
+    color: str | None = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _tipo_valido(cls, v: str) -> str:
+        v = (v or "texto").strip().lower()
+        if v not in ("texto", "flecha"):
+            raise ValueError("El tipo debe ser 'texto' o 'flecha'")
+        return v
+
+
+class AnotacionItem(BaseModel):
+    """Estado completo de una anotación para el guardado en lote del editor."""
+    id: uuid.UUID
+    texto: str | None = None
+    pos_x: float
+    pos_y: float
+    ancho: float
+    alto: float
+    rotacion: float = 0
+    color: str | None = None
+
+
+class AnotacionesUpdate(BaseModel):
+    anotaciones: list[AnotacionItem]
 
 
 # ─── Escritura: Colección (RN-10) ─────────────────────────────────────────────

@@ -1,10 +1,28 @@
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
-/* Paleta institucional: bordó UNLa como color de acento. */
+/*
+  Sistema de diseño LibrApp — experiencia "bibliófila".
+  Paleta institucional UNLa (bordó) + acento ámbar/oro para ubicación,
+  fondos color papel y texturas de madera para el mapa de estantes.
+*/
 @theme {
-  --color-unla: #7a1f2b;
-  --color-unla-dark: #5e1620;
+  /* Marca UNLa (bordó) */
+  --color-unla: #7a1c30;
+  --color-unla-dark: #5a1323;
   --color-unla-light: #9e3644;
+
+  /* Acento de ubicación / resaltado (ámbar cálido y oro) */
+  --color-oro: #d97706;
+  --color-ambar: #e69d45;
+
+  /* Fondos color papel y superficie del mapa */
+  --color-papel: #f9f8f6;
+  --color-mapa: #efece6;
+
+  /* Tipografías */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
 }
 
 html,
@@ -15,7 +33,93 @@ body,
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: var(--font-sans);
+  /* Papel cálido con un leve viñeteado para dar profundidad. */
+  background-color: #f9f8f6;
+  background-image:
+    radial-gradient(120% 120% at 50% 0%, rgba(122, 28, 48, 0.03), transparent 55%),
+    radial-gradient(100% 100% at 100% 100%, rgba(214, 119, 6, 0.03), transparent 45%);
+  background-attachment: fixed;
+  color: #2b2420;
+}
+
+/* ── Utilidades de textura ─────────────────────────────────────────── */
+
+/* Piso del plano (estilo arquitectónico cálido, grilla fina). */
+.map-floor {
+  background-color: #ede9e0;
+  background-image:
+    linear-gradient(rgba(161, 148, 131, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(161, 148, 131, 0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Superficie del mapa: papel arquitectónico con grilla cálida. */
+.map-surface {
+  background-color: var(--color-mapa);
+  background-image:
+    linear-gradient(rgba(122, 28, 48, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(122, 28, 48, 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(90, 70, 55, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 70, 55, 0.04) 1px, transparent 1px);
+  background-size:
+    96px 96px,
+    96px 96px,
+    24px 24px,
+    24px 24px;
+}
+
+/* Bloque de madera para estantes/mueble: veta cálida + volumen sutil. */
+.shelf-wood {
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(80, 46, 22, 0.12) 0 1px,
+      transparent 1px 7px
+    ),
+    linear-gradient(155deg, #c08a54 0%, #a06a3a 48%, #7c4c28 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 236, 209, 0.35),
+    inset 0 -3px 6px rgba(60, 34, 16, 0.35);
+}
+
+/* Panel lateral admin: navy profundo con textura textil discreta. */
+.sidebar-texture {
+  background-color: #1c2436;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, #232c41 0%, #171d2b 100%);
+  background-size:
+    4px 4px,
+    100% 100%;
+}
+
+/* Scrollbar cálida y discreta. */
+* {
+  scrollbar-color: rgba(122, 28, 48, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(122, 28, 48, 0.28);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(122, 28, 48, 0.5);
+  background-clip: content-box;
+}
+
+@keyframes spine-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

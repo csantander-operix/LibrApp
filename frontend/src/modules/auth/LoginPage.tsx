@@ -31,18 +31,18 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+    <div className="flex min-h-full items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-unla text-white">
-            <BookMarked className="h-7 w-7" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-unla text-white shadow-lg shadow-unla/30 ring-1 ring-white/20">
+            <BookMarked className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">LibrApp</h1>
-          <p className="text-sm text-slate-500">Librería Rodolfo Walsh — Panel de administración</p>
+          <h1 className="mt-1 font-serif text-3xl font-bold text-stone-900">LibrApp</h1>
+          <p className="text-sm text-stone-500">Librería Rodolfo Walsh — Panel de administración</p>
         </div>
 
-        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Usuario</label>
+        <form onSubmit={onSubmit} className="rounded-2xl border border-stone-200 bg-white p-6 shadow-lg shadow-stone-900/5">
+          <label className="mb-1 block text-sm font-medium text-stone-700">Usuario</label>
           <Input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -51,7 +51,7 @@ export function LoginPage() {
             required
           />
 
-          <label className="mb-1 mt-4 block text-sm font-medium text-slate-700">Contraseña</label>
+          <label className="mb-1 mt-4 block text-sm font-medium text-stone-700">Contraseña</label>
           <Input
             type="password"
             value={password}
@@ -70,7 +70,7 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-stone-500">
           <Link to="/" className="font-medium text-unla hover:underline">
             Ir a la consulta pública
           </Link>

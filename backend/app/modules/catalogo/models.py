@@ -45,9 +45,34 @@ class Estante(UUIDMixin, TimestampMixin, Base):
     pos_y: Mapped[float] = mapped_column(Numeric(8, 2), default=0, nullable=False)
     ancho: Mapped[float] = mapped_column(Numeric(8, 2), default=10, nullable=False)
     alto: Mapped[float] = mapped_column(Numeric(8, 2), default=10, nullable=False)
+    # Color del bloque en el mapa (hex, ej #3B82F6) para diferenciar categorías
+    # de un vistazo. Nulo = color derivado de la zona en el front.
+    color: Mapped[str | None] = mapped_column(String(9), nullable=True)
 
     zona: Mapped["Zona | None"] = relationship(back_populates="estantes")
     libros: Mapped[list["Libro"]] = relationship(back_populates="estante")
+
+
+class AnotacionMapa(UUIDMixin, TimestampMixin, Base):
+    """Marca de referencia sobre el plano: flechas y textos que orientan al
+    visitante (ENTRADA, SALIDA, ESCALERA, VENTANA, etc.). No es un estante ni
+    guarda libros — sólo geometría y estilo sobre el mapa 2D.
+
+    tipo: 'texto' (etiqueta) | 'flecha' (indicador direccional, usa rotacion).
+    """
+    __tablename__ = "anotaciones_mapa"
+
+    zona_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("zonas.id", ondelete="SET NULL"), nullable=True,
+    )
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False, default="texto")
+    texto: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pos_x: Mapped[float] = mapped_column(Numeric(8, 2), default=0, nullable=False)
+    pos_y: Mapped[float] = mapped_column(Numeric(8, 2), default=0, nullable=False)
+    ancho: Mapped[float] = mapped_column(Numeric(8, 2), default=14, nullable=False)
+    alto: Mapped[float] = mapped_column(Numeric(8, 2), default=6, nullable=False)
+    rotacion: Mapped[float] = mapped_column(Numeric(6, 2), default=0, nullable=False)
+    color: Mapped[str | None] = mapped_column(String(9), nullable=True)
 
 
 class Libro(UUIDMixin, TimestampMixin, Base):

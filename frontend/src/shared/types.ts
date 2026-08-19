@@ -48,7 +48,25 @@ export interface Estante {
   pos_y: number;
   ancho: number;
   alto: number;
+  /** Color del bloque en el mapa (hex). null = color derivado de la zona. */
+  color: string | null;
   total_libros: number;
+}
+
+export type AnotacionTipo = "texto" | "flecha";
+
+/** Marca de referencia sobre el plano (ENTRADA, ESCALERA, VENTANA, flechas). */
+export interface Anotacion {
+  id: string;
+  zona_id: string | null;
+  tipo: AnotacionTipo;
+  texto: string | null;
+  pos_x: number;
+  pos_y: number;
+  ancho: number;
+  alto: number;
+  rotacion: number;
+  color: string | null;
 }
 
 export interface ImportFilaError {

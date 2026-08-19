@@ -16,7 +16,7 @@ from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.modules.auth.models import Usuario, RolEnum
-from app.modules.catalogo.models import Zona, Coleccion, Estante, Libro
+from app.modules.catalogo.models import Zona, Coleccion, Estante, Libro, AnotacionMapa
 
 settings = get_settings()
 
@@ -29,6 +29,7 @@ def bootstrap_dev() -> None:
         colecciones = _seed_colecciones(db)
         estantes = _seed_estantes(db, zona)
         _seed_libros(db, colecciones, estantes)
+        _seed_anotaciones(db, zona)
         db.commit()
     finally:
         db.close()
@@ -77,28 +78,48 @@ def _seed_colecciones(db) -> dict[str, Coleccion]:
 
 
 def _seed_estantes(db, zona: Zona) -> dict[str, Estante]:
-    # (codigo, etiqueta, x, y, ancho, alto) en coordenadas relativas del plano (0-100).
+    # (codigo, etiqueta, x, y, ancho, alto, color) en coords relativas del plano (0-100).
+    # El color diferencia categorías de un vistazo (RF-01).
     base = [
-        ("E1", "Novedades", 10, 10, 18, 12),
-        ("E2", "Humanidades", 32, 10, 18, 12),
-        ("E3", "Sistemas", 54, 10, 18, 12),
-        ("MESA-CENTRAL", "Mesa central", 30, 40, 30, 18),
-        ("ENTRADA", "Entrada / Kiosko", 10, 72, 20, 12),
+        ("E1", "Novedades", 10, 10, 18, 12, "#3B82F6"),
+        ("E2", "Humanidades", 32, 10, 18, 12, "#22C55E"),
+        ("E3", "Sistemas", 54, 10, 18, 12, "#A855F7"),
+        ("MESA-CENTRAL", "Mesa central", 30, 40, 30, 18, "#F97316"),
+        ("ENTRADA", "Entrada / Kiosko", 10, 72, 20, 12, "#EC4899"),
     ]
     out: dict[str, Estante] = {}
-    for codigo, etiqueta, x, y, w, h in base:
+    for codigo, etiqueta, x, y, w, h, color in base:
         est = db.query(Estante).filter(
             Estante.zona_id == zona.id, Estante.codigo == codigo,
         ).first()
         if not est:
             est = Estante(
                 codigo=codigo, etiqueta=etiqueta, zona_id=zona.id,
-                pos_x=x, pos_y=y, ancho=w, alto=h,
+                pos_x=x, pos_y=y, ancho=w, alto=h, color=color,
             )
             db.add(est)
             db.flush()
         out[codigo] = est
     return out
+
+
+def _seed_anotaciones(db, zona: Zona) -> None:
+    """Marcas de referencia sobre el plano (ENTRADA, ESCALERA, VENTANA, flechas)."""
+    if db.query(AnotacionMapa).count() > 0:
+        return  # ya sembrado
+    # (tipo, texto, x, y, ancho, alto, rotacion, color)
+    base = [
+        ("texto",  "ENTRADA / SALIDA", 4, 60, 18, 6, 0, "#7A1C30"),
+        ("flecha", None,               6, 68, 12, 6, 0, "#7A1C30"),
+        ("texto",  "ESCALERA",         82, 4, 15, 6, 0, "#64748B"),
+        ("texto",  "VENTANAL",         40, 2, 20, 5, 0, "#0EA5E9"),
+    ]
+    for tipo, texto, x, y, w, h, rot, color in base:
+        db.add(AnotacionMapa(
+            zona_id=zona.id, tipo=tipo, texto=texto,
+            pos_x=x, pos_y=y, ancho=w, alto=h, rotacion=rot, color=color,
+        ))
+    print("[seed] Anotaciones de mapa de ejemplo cargadas.", flush=True)
 
 
 def _seed_libros(db, colecciones: dict[str, Coleccion], estantes: dict[str, Estante]) -> None:
