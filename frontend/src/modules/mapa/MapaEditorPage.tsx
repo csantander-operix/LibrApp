@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Save, Plus, Trash2, Loader2, Info, Layers,
-  Type, ArrowRight, RotateCcw, RotateCw,
+  Type, ArrowRight, RotateCcw, RotateCw, Copy,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
@@ -62,6 +62,12 @@ export function MapaEditorPage() {
   const [selEstId, setSelEstId] = useState<string | null>(null);
   const [selAnotId, setSelAnotId] = useState<string | null>(null);
   const [zonasModal, setZonasModal] = useState(false);
+  const [copiedEst, setCopiedEst] = useState<Estante | null>(null);
+
+  // Refs para que el keyboard handler siempre vea los valores más recientes.
+  const selEstRef = useRef<Estante | null>(null);
+  const copiedEstRef = useRef<Estante | null>(null);
+  const zonaIdRef = useRef<string>("");
 
   // Sincroniza copias locales desde el server salvo que haya cambios sin guardar.
   useEffect(() => {
@@ -76,6 +82,57 @@ export function MapaEditorPage() {
     if (!zonaId || !zonas.some((z) => z.id === zonaId)) setZonaId(zonas[0].id);
   }, [zonas, zonaId]);
 
+  // Mantener refs actualizados para el keyboard handler.
+  const selEstante = localEst.find((e) => e.id === selEstId) ?? null;
+  useEffect(() => { selEstRef.current = selEstante; }, [selEstante]);
+  useEffect(() => { copiedEstRef.current = copiedEst; }, [copiedEst]);
+  useEffect(() => { zonaIdRef.current = zonaId; }, [zonaId]);
+
+  // Ctrl+C: copiar estante seleccionado | Ctrl+V: pegar (crea uno nuevo vacío).
+  useEffect(() => {
+    async function onKey(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      if (e.key === "c" && selEstRef.current) {
+        e.preventDefault();
+        setCopiedEst(selEstRef.current);
+      } else if (e.key === "v" && copiedEstRef.current) {
+        e.preventDefault();
+        const src = copiedEstRef.current;
+        const defaultCodigo = src.codigo + "-COPIA";
+        const codigo = window.prompt("Código del estante copiado:", defaultCodigo);
+        if (!codigo?.trim()) return;
+        try {
+          const nuevo = await crearEstante({
+            codigo: codigo.trim().toUpperCase(),
+            etiqueta: src.etiqueta,
+            zona_id: (src.zona_id ?? zonaIdRef.current) || null,
+          });
+          const patched: Estante = {
+            ...nuevo,
+            color: src.color,
+            pos_x: Math.min(src.pos_x + 5, 90),
+            pos_y: Math.min(src.pos_y + 5, 90),
+            ancho: src.ancho,
+            alto: src.alto,
+          };
+          setLocalEst((prev) => [...prev, patched]);
+          setSelEstId(nuevo.id);
+          setSelAnotId(null);
+          setDirty(true);
+          qc.invalidateQueries({ queryKey: ["estantes"] });
+        } catch (err: any) {
+          window.alert(err?.response?.data?.detail ?? "No se pudo pegar el estante");
+        }
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const estVisibles = useMemo(
     () => localEst.filter((e) => (zonaId ? e.zona_id === zonaId : true)),
     [localEst, zonaId],
@@ -85,7 +142,6 @@ export function MapaEditorPage() {
     [localAnot, zonaId],
   );
 
-  const selEstante = localEst.find((e) => e.id === selEstId) ?? null;
   const selAnot = localAnot.find((a) => a.id === selAnotId) ?? null;
 
   // ── Guardado en lote (estantes + anotaciones) ───────────────────────────────
@@ -171,6 +227,20 @@ export function MapaEditorPage() {
     if (codigo?.trim()) agregarEst.mutate(codigo.trim().toUpperCase());
   }
 
+  function rotarEstante() {
+    if (!selEstante) return;
+    const { pos_x, pos_y, ancho, alto } = selEstante;
+    const cx = pos_x + ancho / 2;
+    const cy = pos_y + alto / 2;
+    const newPosX = Math.max(0, Math.min(cx - alto / 2, 100 - alto));
+    const newPosY = Math.max(0, Math.min(cy - ancho / 2, 100 - ancho));
+    patchEst(selEstante.id, {
+      ancho: alto, alto: ancho,
+      pos_x: Math.round(newPosX * 100) / 100,
+      pos_y: Math.round(newPosY * 100) / 100,
+    });
+  }
+
   function eliminarEstanteSel() {
     if (!selEstante) return;
     if (selEstante.total_libros > 0) {
@@ -184,9 +254,16 @@ export function MapaEditorPage() {
   }
 
   return (
-    <div>
-      <header className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-serif text-lg font-bold text-stone-900">Editor de mapa</h1>
+    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+      <header className="mb-2 shrink-0 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="font-serif text-lg font-bold text-stone-900">Editor de mapa</h1>
+          {copiedEst && (
+            <span className="flex items-center gap-1 rounded-md bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500">
+              <Copy className="h-3 w-3" /> {copiedEst.codigo} copiado — Ctrl+V para pegar
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {zonas.length > 0 && (
             <Select value={zonaId} onChange={(e) => setZonaId(e.target.value)} className="w-34 py-1 text-xs">
@@ -213,47 +290,54 @@ export function MapaEditorPage() {
       </header>
 
       {dirty && (
-        <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700">
+        <p className="mb-2 shrink-0 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700">
           <Info className="h-3.5 w-3.5" /> Tenés cambios sin guardar.
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_188px]">
-        <div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[1fr_188px]">
+        <div className="flex min-h-0 flex-col gap-2">
           {isLoading ? (
-            <div className="flex h-64 items-center justify-center text-stone-400">
+            <div className="flex flex-1 items-center justify-center text-stone-400">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
             <>
-              <MapaCanvas
-                estantes={estVisibles}
-                anotaciones={anotVisibles}
-                modo="editar"
-                maxHeight="50vh"
-                seleccionadoId={selEstId}
-                seleccionadoAnotId={selAnotId}
-                onSeleccionar={(e) => { setSelEstId((prev) => prev === e.id ? null : e.id); setSelAnotId(null); }}
-                onSeleccionarAnotacion={(a) => { setSelAnotId(a.id); setSelEstId(null); }}
-                onMover={(id, x, y) => patchEst(id, { pos_x: x, pos_y: y })}
-                onResize={(id, w, h) => patchEst(id, { ancho: w, alto: h })}
-                onMoverAnotacion={(id, x, y) => patchAnot(id, { pos_x: x, pos_y: y })}
-                onResizeAnotacion={(id, w, h) => patchAnot(id, { ancho: w, alto: h })}
-                onAgregar={agregarEstante}
-              />
-              {selEstante && (
-                <EstantePanelInline
-                  estante={selEstante}
-                  zonas={zonas}
-                  onCerrar={() => setSelEstId(null)}
+              <div className="min-h-0" style={{ flex: 6 }}>
+                <MapaCanvas
+                  estantes={estVisibles}
+                  anotaciones={anotVisibles}
+                  modo="editar"
+                  seleccionadoId={selEstId}
+                  seleccionadoAnotId={selAnotId}
+                  onSeleccionar={(e) => { setSelEstId((prev) => prev === e.id ? null : e.id); setSelAnotId(null); }}
+                  onSeleccionarAnotacion={(a) => { setSelAnotId(a.id); setSelEstId(null); }}
+                  onMover={(id, x, y) => patchEst(id, { pos_x: x, pos_y: y })}
+                  onResize={(id, w, h) => patchEst(id, { ancho: w, alto: h })}
+                  onMoverAnotacion={(id, x, y) => patchAnot(id, { pos_x: x, pos_y: y })}
+                  onResizeAnotacion={(id, w, h) => patchAnot(id, { ancho: w, alto: h })}
+                  onAgregar={agregarEstante}
                 />
-              )}
+              </div>
+              <div className="min-h-[240px]" style={{ flex: 4 }}>
+                {selEstante ? (
+                  <EstantePanelInline
+                    estante={selEstante}
+                    zonas={zonas}
+                    onCerrar={() => setSelEstId(null)}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-stone-200 bg-stone-50/60 text-xs text-stone-400">
+                    Hacé clic en un estante para ver sus libros
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
 
         {/* Panel lateral contextual */}
-        <aside className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm shadow-stone-900/5">
+        <aside className="min-h-0 overflow-y-auto rounded-xl border border-stone-200 bg-white p-3 shadow-sm shadow-stone-900/5">
           {selEstante ? (
             <div>
               <div className="flex items-center gap-1.5">
@@ -279,6 +363,15 @@ export function MapaEditorPage() {
               </div>
 
               <div className="mt-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">Girar</p>
+                <div className="flex gap-1">
+                  <Button variant="outline" className="flex-1 px-2 py-1 text-xs" onClick={rotarEstante} title="Girar 90°">
+                    <RotateCw className="h-3.5 w-3.5" /> 90°
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-2">
                 <Button variant="danger" className="w-full px-2 py-1 text-xs" onClick={eliminarEstanteSel}>
                   <Trash2 className="h-3.5 w-3.5" /> Eliminar
                 </Button>

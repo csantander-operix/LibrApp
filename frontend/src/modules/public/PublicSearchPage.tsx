@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookMarked, Search, Lock } from "lucide-react";
+import { Search, Lock } from "lucide-react";
 import { Select } from "@/shared/components/ui/Select";
 import { listarLibros, listarEstantes, listarZonas, listarAnotaciones } from "@/modules/catalogo/api";
 import { MapaCanvas } from "@/modules/mapa/MapaCanvas";
@@ -57,9 +57,11 @@ export function PublicSearchPage() {
       <div className="border-b border-stone-200 bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-unla text-white shadow-sm shadow-unla/30">
-              <BookMarked className="h-5 w-5" />
-            </div>
+            <img
+              src="/logo-librapp.png"
+              alt="LibrApp"
+              className="h-9 w-9 rounded-xl object-cover shadow-sm shadow-black/20"
+            />
             <div>
               <p className="font-serif text-sm font-bold leading-tight text-stone-900">LibrApp</p>
               <p className="text-[11px] text-stone-500">Librería Rodolfo Walsh — UNLa</p>
@@ -105,31 +107,38 @@ export function PublicSearchPage() {
         )}
 
         {/* Mapa (RF-01 / RF-13 / RF-11) */}
-        <MapaCanvas
-          estantes={estantesZona}
-          anotaciones={anotacionesZona}
-          modo="ver"
-          resaltados={resaltados}
-          seleccionadoId={estantePanel?.id}
-          maxHeight="38vh"
-          onSeleccionar={(e) =>
-            setEstantePanel((prev) => (prev?.id === e.id ? null : e))
-          }
-        />
+        <div className="h-[42vh]">
+          <MapaCanvas
+            estantes={estantesZona}
+            anotaciones={anotacionesZona}
+            modo="ver"
+            resaltados={resaltados}
+            seleccionadoId={estantePanel?.id}
+            onSeleccionar={(e) =>
+              setEstantePanel((prev) => (prev?.id === e.id ? null : e))
+            }
+          />
+        </div>
         <p className={cn("mt-2 text-xs", q ? "text-unla" : "text-stone-400")}>
           {q
             ? "Los estantes con brillo dorado contienen tu búsqueda. Tocá uno para ver sus libros."
             : "Tocá un estante para ver qué libros tiene."}
         </p>
 
-        {/* Panel inline: debajo del mapa al seleccionar un estante (RF-03). */}
-        {estantePanel && (
-          <EstantePanelInline
-            estante={estantePanel}
-            zonas={zonas}
-            onCerrar={() => setEstantePanel(null)}
-          />
-        )}
+        {/* Panel inline: siempre reservado debajo del mapa (RF-03). */}
+        <div className="mt-3 h-72">
+          {estantePanel ? (
+            <EstantePanelInline
+              estante={estantePanel}
+              zonas={zonas}
+              onCerrar={() => setEstantePanel(null)}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-stone-200 bg-stone-50/60 text-sm text-stone-400">
+              Tocá un estante para ver sus libros
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { BookMarked, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
@@ -34,9 +34,11 @@ export function LoginPage() {
     <div className="flex min-h-full items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-unla text-white shadow-lg shadow-unla/30 ring-1 ring-white/20">
-            <BookMarked className="h-8 w-8" />
-          </div>
+          <img
+            src="/logo-librapp.png"
+            alt="LibrApp"
+            className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-black/25 ring-1 ring-black/10"
+          />
           <h1 className="mt-1 font-serif text-3xl font-bold text-stone-900">LibrApp</h1>
           <p className="text-sm text-stone-500">Librería Rodolfo Walsh — Panel de administración</p>
         </div>

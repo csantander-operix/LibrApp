@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Map, LibrarySquare, Upload, LogOut, BookMarked } from "lucide-react";
+import { LayoutDashboard, BookOpen, Map, LibrarySquare, Upload, LogOut } from "lucide-react";
 import { useAuth } from "@/modules/auth/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +21,11 @@ export function AdminLayout() {
       <aside className="sidebar-texture flex w-64 flex-col text-slate-300">
         {/* Marca */}
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-unla text-white shadow-lg shadow-black/30 ring-1 ring-white/10">
-            <BookMarked className="h-5 w-5" />
-          </div>
+          <img
+            src="/logo-librapp.png"
+            alt="LibrApp"
+            className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-black/30 ring-1 ring-white/10"
+          />
           <div>
             <p className="font-serif text-base font-bold leading-tight text-white">LibrApp</p>
             <p className="text-[11px] tracking-wide text-slate-400">Librería Rodolfo Walsh</p>
