@@ -43,6 +43,7 @@ salvo que cambien `requirements.txt` o `package.json`.
 | Postgres | localhost:5434 |
 
 Credenciales admin (seed): **admin / Admin1234!** (en `backend/.env` → `ADMIN_USERNAME`/`ADMIN_PASSWORD`).
+`RUN_SEED_ON_STARTUP=true` en el `.env` fuerza el seed en producción (fuera de `ENV=development`).
 
 ## Arquitectura
 
@@ -66,8 +67,10 @@ pero **simplificadas**: sin multi-tenancy, sin Celery/Redis, sin mails.
 
 ### Frontend (`frontend/src`)
 - `app/`: `App` → `providers` (QueryClient + BrowserRouter + `AuthProvider`) → `AppRoutes`.
-- `modules/<x>/`: feature-first (`auth`, `dashboard`, `public`, `catalogo`, `mapa`). Cada uno
-  con su `api.ts` (funciones axios tipadas) y sus páginas/componentes.
+- `modules/<x>/`: feature-first (`auth`, `dashboard`, `public`, `catalogo`, `mapa`). Solo
+  `auth` y `catalogo` tienen su propio `api.ts`; el módulo `mapa` importa de `catalogo/api.ts`
+  y `dashboard`/`public` definen sus fetches inline. Al agregar una feature, agregá a
+  `catalogo/api.ts` o creá un nuevo `api.ts` en el módulo según corresponda.
 - `shared/`: `components/ui` (Button/Input/Select/Card/Modal), `AdminLayout` (sidebar),
   `ProtectedRoute` (guard de sesión). `types.ts` centraliza los tipos del dominio.
 - `lib/api.ts`: instancia axios única. El token va en `localStorage` (`librapp_token`) y se
@@ -75,6 +78,20 @@ pero **simplificadas**: sin multi-tenancy, sin Celery/Redis, sin mails.
   apuntando al :8000 — así funciona desde `localhost` o desde otro dispositivo en la red sin
   configurar nada. `VITE_API_URL` la overridea en prod.
 - Alias `@/` → `src/`. Estado de servidor con **TanStack Query** (invalidar por `queryKey`).
+- `lib/utils.ts`: `cn` (clsx+tailwind-merge), `colorEstante(estante, zonas)` (color derivado de
+  zona si `estante.color` es null), `COLORES_ESTANTE` (paleta de swatches del editor de mapa).
+
+### Rutas de la app
+
+| Ruta | Descripción |
+|---|---|
+| `/` | Autoconsulta pública (RF-07) |
+| `/login` | Login del administrador |
+| `/admin` | Dashboard con KPIs |
+| `/admin/catalogo` | ABM de libros (RF-04/RF-06/RF-09) |
+| `/admin/estantes` | ABM de estantes (RF-02) |
+| `/admin/mapa` | Editor de mapa 2D con drag & resize (RF-01/RF-10/RF-11) |
+| `/admin/importar` | Importador Excel/CSV con dry-run (RF-05/CU-04) |
 
 ## Reglas de negocio clave (implementadas — no romper)
 
