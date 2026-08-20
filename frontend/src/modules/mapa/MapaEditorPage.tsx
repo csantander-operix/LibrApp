@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Save, Plus, Trash2, BookOpen, Loader2, Info, Layers,
+  Save, Plus, Trash2, Loader2, Info, Layers,
   Type, ArrowRight, RotateCcw, RotateCw,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
@@ -16,7 +16,7 @@ import {
   type PosicionEstante, type AnotacionPosicion,
 } from "@/modules/catalogo/api";
 import { MapaCanvas } from "./MapaCanvas";
-import { EstantePopup } from "./EstantePopup";
+import { EstantePanelInline } from "./EstantePanelInline";
 import { ZonasModal } from "./ZonasModal";
 
 /** Fila de swatches de color reutilizable. */
@@ -61,7 +61,6 @@ export function MapaEditorPage() {
   const [dirty, setDirty] = useState(false);
   const [selEstId, setSelEstId] = useState<string | null>(null);
   const [selAnotId, setSelAnotId] = useState<string | null>(null);
-  const [popup, setPopup] = useState<Estante | null>(null);
   const [zonasModal, setZonasModal] = useState(false);
 
   // Sincroniza copias locales desde el server salvo que haya cambios sin guardar.
@@ -186,170 +185,168 @@ export function MapaEditorPage() {
 
   return (
     <div>
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-stone-900">Editor de mapa</h1>
-          <p className="text-sm text-stone-500">
-            Arrastrá y redimensioná los estantes, pintalos por categoría y agregá flechas o textos
-            (entrada, escalera, ventanas). Guardá al terminar (RF-01/RF-10).
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <header className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-serif text-lg font-bold text-stone-900">Editor de mapa</h1>
+        <div className="flex flex-wrap items-center gap-1.5">
           {zonas.length > 0 && (
-            <Select value={zonaId} onChange={(e) => setZonaId(e.target.value)} className="w-40">
+            <Select value={zonaId} onChange={(e) => setZonaId(e.target.value)} className="w-34 py-1 text-xs">
               {zonas.map((z) => <option key={z.id} value={z.id}>{z.nombre}</option>)}
             </Select>
           )}
-          <Button variant="outline" onClick={() => setZonasModal(true)}>
-            <Layers className="h-4 w-4" /> Zonas
+          <Button variant="outline" className="px-2.5 py-1 text-xs" onClick={() => setZonasModal(true)}>
+            <Layers className="h-3.5 w-3.5" /> Zonas
           </Button>
-          <Button variant="outline" onClick={agregarEstante}>
-            <Plus className="h-4 w-4" /> Estante
+          <Button variant="outline" className="px-2.5 py-1 text-xs" onClick={agregarEstante}>
+            <Plus className="h-3.5 w-3.5" /> Estante
           </Button>
-          <Button variant="outline" onClick={() => agregarAnot.mutate("texto")}>
-            <Type className="h-4 w-4" /> Texto
+          <Button variant="outline" className="px-2.5 py-1 text-xs" onClick={() => agregarAnot.mutate("texto")}>
+            <Type className="h-3.5 w-3.5" /> Texto
           </Button>
-          <Button variant="outline" onClick={() => agregarAnot.mutate("flecha")}>
-            <ArrowRight className="h-4 w-4" /> Flecha
+          <Button variant="outline" className="px-2.5 py-1 text-xs" onClick={() => agregarAnot.mutate("flecha")}>
+            <ArrowRight className="h-3.5 w-3.5" /> Flecha
           </Button>
-          <Button onClick={() => guardar.mutate()} disabled={!dirty || guardar.isPending}>
-            {guardar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          <Button className="px-2.5 py-1 text-xs" onClick={() => guardar.mutate()} disabled={!dirty || guardar.isPending}>
+            {guardar.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Guardar
           </Button>
         </div>
       </header>
 
       {dirty && (
-        <p className="mb-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          <Info className="h-4 w-4" /> Tenés cambios sin guardar.
+        <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700">
+          <Info className="h-3.5 w-3.5" /> Tenés cambios sin guardar.
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_188px]">
         <div>
           {isLoading ? (
             <div className="flex h-64 items-center justify-center text-stone-400">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
-            <MapaCanvas
-              estantes={estVisibles}
-              anotaciones={anotVisibles}
-              modo="editar"
-              seleccionadoId={selEstId}
-              seleccionadoAnotId={selAnotId}
-              onSeleccionar={(e) => { setSelEstId(e.id); setSelAnotId(null); }}
-              onSeleccionarAnotacion={(a) => { setSelAnotId(a.id); setSelEstId(null); }}
-              onMover={(id, x, y) => patchEst(id, { pos_x: x, pos_y: y })}
-              onResize={(id, w, h) => patchEst(id, { ancho: w, alto: h })}
-              onMoverAnotacion={(id, x, y) => patchAnot(id, { pos_x: x, pos_y: y })}
-              onResizeAnotacion={(id, w, h) => patchAnot(id, { ancho: w, alto: h })}
-              onAgregar={agregarEstante}
-            />
+            <>
+              <MapaCanvas
+                estantes={estVisibles}
+                anotaciones={anotVisibles}
+                modo="editar"
+                maxHeight="50vh"
+                seleccionadoId={selEstId}
+                seleccionadoAnotId={selAnotId}
+                onSeleccionar={(e) => { setSelEstId((prev) => prev === e.id ? null : e.id); setSelAnotId(null); }}
+                onSeleccionarAnotacion={(a) => { setSelAnotId(a.id); setSelEstId(null); }}
+                onMover={(id, x, y) => patchEst(id, { pos_x: x, pos_y: y })}
+                onResize={(id, w, h) => patchEst(id, { ancho: w, alto: h })}
+                onMoverAnotacion={(id, x, y) => patchAnot(id, { pos_x: x, pos_y: y })}
+                onResizeAnotacion={(id, w, h) => patchAnot(id, { ancho: w, alto: h })}
+                onAgregar={agregarEstante}
+              />
+              {selEstante && (
+                <EstantePanelInline
+                  estante={selEstante}
+                  zonas={zonas}
+                  onCerrar={() => setSelEstId(null)}
+                />
+              )}
+            </>
           )}
         </div>
 
         {/* Panel lateral contextual */}
-        <aside className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm shadow-stone-900/5">
+        <aside className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm shadow-stone-900/5">
           {selEstante ? (
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span
-                  className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold text-white shadow-sm"
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm"
                   style={{ background: colorEstante(selEstante.color, selEstante.zona_id) }}
                 >
                   {selEstante.codigo}
                 </span>
-                <span className="text-xs text-stone-400">Estante</span>
+                <span className="text-[10px] text-stone-400">Estante</span>
               </div>
               {selEstante.etiqueta && (
-                <p className="mt-3 font-serif text-base font-semibold text-stone-800">{selEstante.etiqueta}</p>
+                <p className="mt-2 font-serif text-sm font-semibold text-stone-800">{selEstante.etiqueta}</p>
               )}
-              <p className="mt-1 text-sm text-stone-500">{selEstante.total_libros} libro(s) asignado(s)</p>
-              <p className="mt-1 text-xs text-stone-400">
-                {Math.round(selEstante.ancho)} × {Math.round(selEstante.alto)} (arrastrá la esquina para
-                redimensionar)
+              <p className="mt-1 text-xs text-stone-500">{selEstante.total_libros} libro(s)</p>
+              <p className="mt-0.5 text-[10px] text-stone-400">
+                {Math.round(selEstante.ancho)} × {Math.round(selEstante.alto)} · arrastrá esquina
               </p>
 
-              <div className="mt-4">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">Color / categoría</p>
+              <div className="mt-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">Color</p>
                 <ColorPicker value={selEstante.color} onChange={(c) => patchEst(selEstante.id, { color: c })} />
               </div>
 
-              <div className="mt-4 space-y-2">
-                <Button variant="outline" className="w-full" onClick={() => setPopup(selEstante)}>
-                  <BookOpen className="h-4 w-4" /> Ver libros
-                </Button>
-                <Button variant="danger" className="w-full" onClick={eliminarEstanteSel}>
-                  <Trash2 className="h-4 w-4" /> Eliminar
+              <div className="mt-3">
+                <Button variant="danger" className="w-full px-2 py-1 text-xs" onClick={eliminarEstanteSel}>
+                  <Trash2 className="h-3.5 w-3.5" /> Eliminar
                 </Button>
               </div>
             </div>
           ) : selAnot ? (
             <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-stone-800 px-3 py-1 text-sm font-semibold text-white">
-                  {selAnot.tipo === "flecha" ? <ArrowRight className="h-3.5 w-3.5" /> : <Type className="h-3.5 w-3.5" />}
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-stone-800 px-2 py-0.5 text-xs font-semibold text-white">
+                  {selAnot.tipo === "flecha" ? <ArrowRight className="h-3 w-3" /> : <Type className="h-3 w-3" />}
                   {selAnot.tipo === "flecha" ? "Flecha" : "Texto"}
                 </span>
-                <span className="text-xs text-stone-400">Anotación</span>
+                <span className="text-[10px] text-stone-400">Anotación</span>
               </div>
 
               {selAnot.tipo === "texto" && (
-                <div className="mt-4">
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Texto</label>
+                <div className="mt-3">
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-stone-500">Texto</label>
                   <Input
                     value={selAnot.texto ?? ""}
                     onChange={(e) => patchAnot(selAnot.id, { texto: e.target.value })}
-                    placeholder="Ej: ESCALERA, VENTANA…"
+                    placeholder="Ej: ESCALERA…"
                   />
                 </div>
               )}
 
-              <div className="mt-4">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">Color</p>
+              <div className="mt-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">Color</p>
                 <ColorPicker value={selAnot.color} onChange={(c) => patchAnot(selAnot.id, { color: c ?? "#7A1C30" })} />
               </div>
 
-              <div className="mt-4">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              <div className="mt-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
                   Rotación ({Math.round(selAnot.rotacion)}°)
                 </p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => patchAnot(selAnot.id, { rotacion: selAnot.rotacion - 15 })}>
-                    <RotateCcw className="h-4 w-4" />
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" className="px-2 py-1" onClick={() => patchAnot(selAnot.id, { rotacion: selAnot.rotacion - 15 })}>
+                    <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="outline" onClick={() => patchAnot(selAnot.id, { rotacion: selAnot.rotacion + 15 })}>
-                    <RotateCw className="h-4 w-4" />
+                  <Button variant="outline" className="px-2 py-1" onClick={() => patchAnot(selAnot.id, { rotacion: selAnot.rotacion + 15 })}>
+                    <RotateCw className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" onClick={() => patchAnot(selAnot.id, { rotacion: 0 })}>
+                  <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => patchAnot(selAnot.id, { rotacion: 0 })}>
                     Reset
                   </Button>
                 </div>
               </div>
 
-              <p className="mt-3 text-xs text-stone-400">
-                Arrastrá para mover; la esquina inferior derecha redimensiona.
+              <p className="mt-2 text-[10px] text-stone-400">
+                Arrastrá para mover; esquina redimensiona.
               </p>
 
-              <Button variant="danger" className="mt-4 w-full" onClick={() => eliminarAnot.mutate(selAnot.id)}>
-                <Trash2 className="h-4 w-4" /> Eliminar anotación
+              <Button variant="danger" className="mt-3 w-full px-2 py-1 text-xs" onClick={() => eliminarAnot.mutate(selAnot.id)}>
+                <Trash2 className="h-3.5 w-3.5" /> Eliminar
               </Button>
             </div>
           ) : (
-            <div className="text-sm text-stone-400">
-              <p>Seleccioná un estante o una anotación para editarlo.</p>
-              <p className="mt-3 text-xs">
+            <div className="text-xs text-stone-400">
+              <p>Seleccioná un estante o anotación para editarlo.</p>
+              <p className="mt-2">
                 Usá <span className="font-semibold text-stone-500">Texto</span> y{" "}
-                <span className="font-semibold text-stone-500">Flecha</span> para señalizar entrada, salida,
-                escaleras o ventanas.
+                <span className="font-semibold text-stone-500">Flecha</span> para señalizar entrada, salida, escaleras.
               </p>
             </div>
           )}
         </aside>
       </div>
 
-      {popup && <EstantePopup estante={popup} onClose={() => setPopup(null)} />}
       {zonasModal && <ZonasModal zonas={zonas} onClose={() => setZonasModal(false)} />}
     </div>
   );

@@ -20,6 +20,8 @@ interface Props {
   /** Controles flotantes contextuales (opcionales). */
   onEditar?: () => void;
   onAgregar?: () => void;
+  /** Altura máxima del viewport del plano (ej: "38vh", "320px"). Sin valor = 100% del aspect-ratio. */
+  maxHeight?: string;
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -79,6 +81,7 @@ export function MapaCanvas({
   seleccionadoId, seleccionadoAnotId, resaltados,
   onSeleccionar, onSeleccionarAnotacion, onMover, onResize,
   onMoverAnotacion, onResizeAnotacion, onEditar, onAgregar,
+  maxHeight,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -159,10 +162,10 @@ export function MapaCanvas({
 
   return (
     <div className="relative">
-      {/* Viewport del plano: piso arquitectónico cálido con scroll al hacer zoom. */}
+      {/* Viewport del plano: ancho 100% del padre; el canvas interno mantiene el aspect-ratio. */}
       <div
-        className="overflow-auto rounded-2xl border border-stone-300/80 shadow-inner shadow-stone-900/10"
-        style={{ aspectRatio: "3 / 2" }}
+        className="w-full overflow-auto rounded-2xl border border-stone-300/80 shadow-inner shadow-stone-900/10"
+        style={maxHeight ? { maxHeight } : undefined}
       >
         <div style={{ width: `${zoom * 100}%` }} className="transition-[width] duration-200">
           <div ref={canvasRef} className="map-floor relative w-full" style={{ aspectRatio: "3 / 2" }}>
