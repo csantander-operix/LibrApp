@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Search, Loader2, MapPinOff } from "lucide-react";
 import { Input } from "@/shared/components/ui/Input";
 import { Select } from "@/shared/components/ui/Select";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import type { Libro } from "@/shared/types";
 import { listarLibros, listarColecciones, listarEstantes, eliminarLibro } from "./api";
 import { LibroFormModal } from "./LibroFormModal";
@@ -25,6 +26,7 @@ export function CatalogoPage() {
   const [pagina, setPagina] = useState(1);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [libroEdit, setLibroEdit] = useState<Libro | null>(null);
+  const [libroEliminar, setLibroEliminar] = useState<Libro | null>(null);
 
   const filtros = {
     q: q.trim().length >= 2 ? q.trim() : undefined,
@@ -46,6 +48,7 @@ export function CatalogoPage() {
       qc.invalidateQueries({ queryKey: ["libros"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["estantes"] });
+      setLibroEliminar(null);
     },
   });
 
@@ -66,9 +69,7 @@ export function CatalogoPage() {
     setModalAbierto(true);
   }
   function confirmarEliminar(libro: Libro) {
-    if (window.confirm(`¿Eliminar "${libro.titulo}"? Esta acción no se puede deshacer.`)) {
-      eliminar.mutate(libro.id);
-    }
+    setLibroEliminar(libro);
   }
 
   return (
@@ -205,6 +206,23 @@ export function CatalogoPage() {
         libro={libroEdit}
         colecciones={colecciones}
         estantes={estantes}
+      />
+
+      <ConfirmDialog
+        abierto={libroEliminar !== null}
+        onClose={() => setLibroEliminar(null)}
+        onConfirm={() => libroEliminar && eliminar.mutate(libroEliminar.id)}
+        titulo="Eliminar libro"
+        cargando={eliminar.isPending}
+        mensaje={
+          <>
+            ¿Seguro que querés eliminar{" "}
+            <strong className="font-semibold text-stone-900">
+              «{libroEliminar?.titulo}»
+            </strong>
+            ? Esta acción no se puede deshacer.
+          </>
+        }
       />
     </div>
   );
